@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Truck Service Map</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-row">
+      <div>
+        <h1>Truck Service Map</h1>
+        <p>Find nearby truck repair shops fast</p>
+      </div>
+
+      <button id="openAddServiceBtn" class="header-btn" type="button">
+        + Add Service
+      </button>
+    </div>
+  </header>
+
+  <main class="container main-content">
+    <section class="layout">
+      <div class="map-section">
+        <div id="map"></div>
+      </div>
+
+      <aside class="service-panel">
+        <div class="service-panel-inner">
+          <h2>Select a service</h2>
+          <p class="muted">
+            Click any marker on the map to see truck repair shop details.
+          </p>
+
+          <div class="service-card" id="serviceCard">
+            <div class="service-name">No service selected</div>
+            <div class="service-row"><span>Address:</span> —</div>
+            <div class="service-row"><span>Phone:</span> —</div>
+            <div class="service-row"><span>Services:</span> —</div>
+            <div class="service-row"><span>Hourly Rate:</span> —</div>
+            <div class="service-row"><span>Diagnostic Price:</span> —</div>
+            <div class="service-row"><span>Hours:</span> —</div>
+
+            <div class="button-group">
+              <a class="action-btn disabled" href="#" id="callBtn">Call</a>
+              <a class="action-btn disabled" href="#" id="navigateBtn" target="_blank">Navigate</a>
+              <button class="action-btn disabled" id="checkInBtn" type="button">Check-In</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <!-- CHECK-IN MODAL -->
+  <div id="checkinModal" class="modal">
+    <div class="modal-content">
+      <h2>Driver Check-In</h2>
+
+      <div class="selected-service-box">
+        <strong>Service:</strong> <span id="selectedServiceName">No service selected</span>
+      </div>
+
+      <form id="checkinForm">
+        <div>
+          <label for="driverName">Driver Name</label>
+          <input id="driverName" name="driver_name" type="text" required />
+        </div>
+
+        <div>
+          <label for="driverPhone">Phone</label>
+          <input id="driverPhone" name="phone" type="text" required />
+        </div>
+
+        <div>
+          <label for="truckField">Truck</label>
+          <input id="truckField" name="truck" type="text" />
+        </div>
+
+        <div>
+          <label for="trailerField">Trailer</label>
+          <input id="trailerField" name="trailer" type="text" />
+        </div>
+
+        <div>
+          <label for="problemField">Problem</label>
+          <textarea id="problemField" name="problem"></textarea>
+        </div>
+
+        <div>
+          <label for="etaField">ETA</label>
+          <input id="etaField" name="eta" type="text" />
+        </div>
+
+        <div class="form-actions">
+          <button class="form-btn primary" id="submitCheckinBtn" type="submit">Send Check-In</button>
+          <button class="form-btn secondary" id="closeModal" type="button">Cancel</button>
+        </div>
+
+        <div id="formMessage" class="form-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD SERVICE MODAL -->
+  <div id="addServiceModal" class="modal">
+    <div class="modal-content">
+      <h2>Add Service</h2>
+
+      <form id="addServiceForm">
+        <div>
+          <label for="shopName">Shop Name</label>
+          <input id="shopName" type="text" required />
+        </div>
+
+        <div>
+          <label for="shopAddress">Address</label>
+          <input id="shopAddress" type="text" required />
+        </div>
+
+        <div>
+          <label for="shopPhone">Phone</label>
+          <input id="shopPhone" type="text" />
+        </div>
+
+        <div>
+          <label for="shopServices">Services</label>
+          <textarea id="shopServices"></textarea>
+        </div>
+
+        <div>
+          <label for="shopHourlyRate">Hourly Rate</label>
+          <input id="shopHourlyRate" type="text" />
+        </div>
+
+        <div>
+          <label for="shopDiagnosticPrice">Diagnostic Price</label>
+          <input id="shopDiagnosticPrice" type="text" />
+        </div>
+
+        <div>
+          <label for="shopHours">Hours</label>
+          <input id="shopHours" type="text" />
+        </div>
+
+        <div class="two-col">
+          <div>
+            <label for="shopLat">Latitude</label>
+            <input id="shopLat" type="number" step="any" required />
+          </div>
+
+          <div>
+            <label for="shopLng">Longitude</label>
+            <input id="shopLng" type="number" step="any" required />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="form-btn primary" id="submitAddServiceBtn" type="submit">Save Service</button>
+          <button class="form-btn secondary" id="closeAddServiceModal" type="button">Cancel</button>
+        </div>
+
+        <div id="addServiceMessage" class="form-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
