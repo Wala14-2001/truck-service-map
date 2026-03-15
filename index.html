@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Truck Service Map</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand-block">
+        <div class="brand-logo">TSM</div>
+        <div class="brand-text">
+          <h1>Truck Service Map</h1>
+          <p>Find nearby truck repair shops fast</p>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="openAddServiceBtn" class="header-btn" type="button">
+          + Add Service
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <aside class="left-panel">
+      <section class="search-panel">
+        <div class="panel-title-row">
+          <h2>Search</h2>
+        </div>
+
+        <div class="main-search-row">
+          <input
+            type="text"
+            id="locationSearch"
+            placeholder="City, address, or location"
+          />
+          <input
+            type="text"
+            id="shopSearch"
+            placeholder="Shop or service type"
+          />
+          <button id="searchBtn" class="primary-search-btn" type="button">Search</button>
+        </div>
+
+        <div id="searchStatus" class="search-status"></div>
+
+        <div class="secondary-actions">
+          <button id="shopSearchClearBtn" class="secondary-btn" type="button">
+            Clear Shop Search
+          </button>
+          <button id="clearFiltersBtn" class="secondary-btn" type="button">
+            Clear Filters
+          </button>
+        </div>
+      </section>
+
+      <section class="filters-panel">
+        <div class="panel-title-row">
+          <h2>Filters</h2>
+        </div>
+
+        <div class="filters-list">
+          <button class="filter-chip" data-filter="engine_repair" type="button">Engine</button>
+          <button class="filter-chip" data-filter="transmission" type="button">Transmission</button>
+          <button class="filter-chip" data-filter="electrical" type="button">Electrical</button>
+          <button class="filter-chip" data-filter="brakes" type="button">Brakes</button>
+          <button class="filter-chip" data-filter="tires" type="button">Tires</button>
+          <button class="filter-chip" data-filter="trailer_repair" type="button">Trailer</button>
+          <button class="filter-chip" data-filter="diagnostics" type="button">Diagnostics</button>
+          <button class="filter-chip" data-filter="roadside_service" type="button">Roadside</button>
+          <button class="filter-chip" data-filter="mobile_mechanic" type="button">Mobile</button>
+          <button class="filter-chip" data-filter="towing_service" type="button">Towing</button>
+          <button class="filter-chip" data-filter="open_24_7" type="button">24/7</button>
+        </div>
+      </section>
+
+      <section class="service-panel">
+        <div class="service-panel-header">
+          <h2>Selected service</h2>
+          <p>Click any marker on the map to see truck repair shop details.</p>
+        </div>
+
+        <div class="service-card" id="serviceCard">
+          <div class="service-name">No service selected</div>
+          <div class="verified-badge-placeholder">—</div>
+          <div class="service-row"><span>Address</span> —</div>
+          <div class="service-row"><span>Phone</span> —</div>
+          <div class="service-row"><span>Services</span> —</div>
+          <div class="service-row"><span>Service Types</span> —</div>
+          <div class="service-row"><span>Availability</span> —</div>
+          <div class="service-row"><span>Hourly Rate</span> —</div>
+          <div class="service-row"><span>Diagnostic Price</span> —</div>
+          <div class="service-row"><span>Hours</span> —</div>
+
+          <div class="button-group">
+            <a class="action-btn disabled" href="#" id="callBtn">Call</a>
+            <a class="action-btn disabled" href="#" id="navigateBtn" target="_blank">Navigate</a>
+            <button class="action-btn disabled" id="checkInBtn" type="button">Check-In</button>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <section class="map-panel">
+      <div class="map-card">
+        <div id="map"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- CHECK-IN MODAL -->
+  <div id="checkinModal" class="modal">
+    <div class="modal-content">
+      <h2>Driver Check-In</h2>
+
+      <div class="selected-service-box">
+        <strong>Service:</strong> <span id="selectedServiceName">No service selected</span>
+      </div>
+
+      <form id="checkinForm">
+        <div>
+          <label for="driverName">Driver Name</label>
+          <input id="driverName" name="driver_name" type="text" required />
+        </div>
+
+        <div>
+          <label for="driverPhone">Phone</label>
+          <input id="driverPhone" name="phone" type="text" required />
+        </div>
+
+        <div>
+          <label for="truckField">Truck</label>
+          <input id="truckField" name="truck" type="text" />
+        </div>
+
+        <div>
+          <label for="trailerField">Trailer</label>
+          <input id="trailerField" name="trailer" type="text" />
+        </div>
+
+        <div>
+          <label for="problemField">Problem</label>
+          <textarea id="problemField" name="problem"></textarea>
+        </div>
+
+        <div>
+          <label for="etaField">ETA</label>
+          <input id="etaField" name="eta" type="text" />
+        </div>
+
+        <div class="form-actions">
+          <button class="form-btn primary" id="submitCheckinBtn" type="submit">Send Check-In</button>
+          <button class="form-btn secondary" id="closeModal" type="button">Cancel</button>
+        </div>
+
+        <div id="formMessage" class="form-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD SERVICE MODAL -->
+  <div id="addServiceModal" class="modal">
+    <div class="modal-content">
+      <h2>Add Service</h2>
+
+      <form id="addServiceForm">
+        <div>
+          <label for="shopName">Shop Name</label>
+          <input id="shopName" type="text" required />
+        </div>
+
+        <div>
+          <label for="shopAddress">Address</label>
+          <input id="shopAddress" type="text" required />
+        </div>
+
+        <div>
+          <label for="shopPhone">Phone</label>
+          <input id="shopPhone" type="text" />
+        </div>
+
+        <div>
+          <label for="shopServices">Additional Services Notes</label>
+          <textarea id="shopServices"></textarea>
+        </div>
+
+        <div class="category-block">
+          <h3>Repair Categories</h3>
+          <div class="checkbox-grid">
+            <label class="checkbox-item"><input id="engineRepair" type="checkbox" /> Engine repair</label>
+            <label class="checkbox-item"><input id="transmissionField" type="checkbox" /> Transmission</label>
+            <label class="checkbox-item"><input id="electricalField" type="checkbox" /> Electrical</label>
+            <label class="checkbox-item"><input id="brakesField" type="checkbox" /> Brakes</label>
+            <label class="checkbox-item"><input id="tiresField" type="checkbox" /> Tires</label>
+            <label class="checkbox-item"><input id="trailerRepairField" type="checkbox" /> Trailer repair</label>
+            <label class="checkbox-item"><input id="diagnosticsField" type="checkbox" /> Diagnostics</label>
+          </div>
+        </div>
+
+        <div class="category-block">
+          <h3>Service Type</h3>
+          <div class="checkbox-grid">
+            <label class="checkbox-item"><input id="roadsideServiceField" type="checkbox" /> Roadside service</label>
+            <label class="checkbox-item"><input id="mobileMechanicField" type="checkbox" /> Mobile mechanic</label>
+            <label class="checkbox-item"><input id="towingServiceField" type="checkbox" /> Towing</label>
+          </div>
+        </div>
+
+        <div class="category-block">
+          <h3>Availability</h3>
+          <div class="checkbox-grid">
+            <label class="checkbox-item"><input id="open247Field" type="checkbox" /> Open 24/7</label>
+          </div>
+        </div>
+
+        <div class="category-block">
+          <h3>Shop Status</h3>
+          <div class="checkbox-grid">
+            <label class="checkbox-item"><input id="verifiedField" type="checkbox" /> Verified shop</label>
+          </div>
+        </div>
+
+        <div>
+          <label for="shopHourlyRate">Hourly Rate</label>
+          <input id="shopHourlyRate" type="text" />
+        </div>
+
+        <div>
+          <label for="shopDiagnosticPrice">Diagnostic Price</label>
+          <input id="shopDiagnosticPrice" type="text" />
+        </div>
+
+        <div>
+          <label for="shopHours">Hours</label>
+          <input id="shopHours" type="text" />
+        </div>
+
+        <div class="two-col">
+          <div>
+            <label for="shopLat">Latitude</label>
+            <input id="shopLat" type="number" step="any" required />
+          </div>
+
+          <div>
+            <label for="shopLng">Longitude</label>
+            <input id="shopLng" type="number" step="any" required />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="form-btn primary" id="submitAddServiceBtn" type="submit">Save Service</button>
+          <button class="form-btn secondary" id="closeAddServiceModal" type="button">Cancel</button>
+        </div>
+
+        <div id="addServiceMessage" class="form-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
