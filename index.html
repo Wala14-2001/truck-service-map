@@ -20,6 +20,8 @@
       </div>
 
       <div class="topbar-actions">
+        <a href="#" class="auth-link">Log In</a>
+        <a href="#" class="auth-link auth-link-strong">Sign Up</a>
         <button id="openAddServiceBtn" class="header-btn" type="button">
           + Add Service
         </button>
@@ -32,6 +34,9 @@
       <section class="search-panel">
         <div class="panel-title-row">
           <h2>Search</h2>
+          <div class="panel-mini-nav">
+            <span class="panel-mini-pill">Map Search</span>
+          </div>
         </div>
 
         <div class="main-search-row">
@@ -48,6 +53,15 @@
           <button id="searchBtn" class="primary-search-btn" type="button">Search</button>
         </div>
 
+        <div class="map-actions">
+          <button id="useMyLocationBtn" class="secondary-btn" type="button">
+            Use My Location
+          </button>
+          <button id="searchAreaBtn" class="secondary-btn hidden" type="button">
+            Search This Area
+          </button>
+        </div>
+
         <div id="searchStatus" class="search-status"></div>
 
         <div class="secondary-actions">
@@ -60,26 +74,6 @@
         </div>
       </section>
 
-      <section class="filters-panel">
-        <div class="panel-title-row">
-          <h2>Filters</h2>
-        </div>
-
-        <div class="filters-list">
-          <button class="filter-chip" data-filter="engine_repair" type="button">Engine</button>
-          <button class="filter-chip" data-filter="transmission" type="button">Transmission</button>
-          <button class="filter-chip" data-filter="electrical" type="button">Electrical</button>
-          <button class="filter-chip" data-filter="brakes" type="button">Brakes</button>
-          <button class="filter-chip" data-filter="tires" type="button">Tires</button>
-          <button class="filter-chip" data-filter="trailer_repair" type="button">Trailer</button>
-          <button class="filter-chip" data-filter="diagnostics" type="button">Diagnostics</button>
-          <button class="filter-chip" data-filter="roadside_service" type="button">Roadside</button>
-          <button class="filter-chip" data-filter="mobile_mechanic" type="button">Mobile</button>
-          <button class="filter-chip" data-filter="towing_service" type="button">Towing</button>
-          <button class="filter-chip" data-filter="open_24_7" type="button">24/7</button>
-        </div>
-      </section>
-
       <section class="service-panel">
         <div class="service-panel-header">
           <h2>Selected service</h2>
@@ -88,15 +82,17 @@
 
         <div class="service-card" id="serviceCard">
           <div class="service-name">No service selected</div>
-          <div class="verified-badge-placeholder">—</div>
-          <div class="service-row"><span>Address</span> —</div>
-          <div class="service-row"><span>Phone</span> —</div>
-          <div class="service-row"><span>Services</span> —</div>
-          <div class="service-row"><span>Service Types</span> —</div>
-          <div class="service-row"><span>Availability</span> —</div>
-          <div class="service-row"><span>Hourly Rate</span> —</div>
-          <div class="service-row"><span>Diagnostic Price</span> —</div>
-          <div class="service-row"><span>Hours</span> —</div>
+          <div class="verified-badge-placeholder">-</div>
+          <div class="service-row"><span>Address</span> -</div>
+          <div class="service-row"><span>Phone</span> -</div>
+          <div class="service-row"><span>Services</span> -</div>
+          <div class="service-row"><span>Service Types</span> -</div>
+          <div class="service-row"><span>Availability</span> -</div>
+          <div class="service-row"><span>Status</span> Hours unavailable</div>
+          <div class="service-row"><span>Distance</span> -</div>
+          <div class="service-row"><span>Hourly Rate</span> -</div>
+          <div class="service-row"><span>Diagnostic Price</span> -</div>
+          <div class="service-row"><span>Hours</span> -</div>
 
           <div class="button-group">
             <a class="action-btn disabled" href="#" id="callBtn">Call</a>
@@ -105,16 +101,53 @@
           </div>
         </div>
       </section>
+
+      <section class="nearest-panel">
+        <div class="panel-title-row">
+          <h2>Nearby Results</h2>
+          <button id="toggleNearestBtn" class="collapse-btn" type="button">Show</button>
+        </div>
+        <div id="nearestServicesContent" class="nearest-services-content hidden">
+          <p id="nearestServicesHint" class="nearest-hint">
+            Use your location to see the closest services.
+          </p>
+          <div id="nearestServicesList" class="nearest-services-list"></div>
+        </div>
+      </section>
     </aside>
 
     <section class="map-panel">
+      <section class="filters-panel map-filters-panel">
+        <div class="panel-title-row">
+          <h2>Filters</h2>
+          <button id="toggleFiltersBtn" class="collapse-btn hidden" type="button">Hide</button>
+        </div>
+
+        <div id="filtersContent" class="filters-content">
+          <div class="filters-list">
+            <button class="filter-chip" data-filter="engine_repair" type="button">Engine</button>
+            <button class="filter-chip" data-filter="transmission" type="button">Transmission</button>
+            <button class="filter-chip" data-filter="electrical" type="button">Electrical</button>
+            <button class="filter-chip" data-filter="brakes" type="button">Brakes</button>
+            <button class="filter-chip" data-filter="tires" type="button">Tires</button>
+            <button class="filter-chip" data-filter="trailer_repair" type="button">Trailer</button>
+            <button class="filter-chip" data-filter="diagnostics" type="button">Diagnostics</button>
+            <button class="filter-chip" data-filter="roadside_service" type="button">Roadside</button>
+            <button class="filter-chip" data-filter="mobile_mechanic" type="button">Mobile</button>
+            <button class="filter-chip" data-filter="towing_service" type="button">Towing</button>
+            <button class="filter-chip" data-filter="open_24_7" type="button">24/7</button>
+            <button class="filter-chip" id="openNowFilterBtn" type="button">Open Now</button>
+          </div>
+        </div>
+      </section>
+
       <div class="map-card">
+        <div id="mapOverlayBadge" class="map-overlay-badge hidden"></div>
         <div id="map"></div>
       </div>
     </section>
   </main>
 
-  <!-- CHECK-IN MODAL -->
   <div id="checkinModal" class="modal">
     <div class="modal-content">
       <h2>Driver Check-In</h2>
@@ -164,7 +197,6 @@
     </div>
   </div>
 
-  <!-- ADD SERVICE MODAL -->
   <div id="addServiceModal" class="modal">
     <div class="modal-content">
       <h2>Add Service</h2>
