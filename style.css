@@ -883,6 +883,26 @@ body {
     height: auto;
   }
 
+  .left-panel {
+    display: contents;
+  }
+
+  .search-panel {
+    order: 1;
+  }
+
+  .map-panel {
+    order: 2;
+  }
+
+  .service-panel {
+    order: 3;
+  }
+
+  .nearest-panel {
+    order: 4;
+  }
+
   .map-card {
     height: 60vh;
     min-height: 420px;
@@ -913,6 +933,11 @@ body {
 
   .main-search-row {
     grid-template-columns: 1fr;
+  }
+
+  .map-card {
+    height: 52vh;
+    min-height: 320px;
   }
 
   .two-col,
