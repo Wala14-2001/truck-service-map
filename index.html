@@ -15,30 +15,21 @@
         <div class="brand-logo">TSM</div>
         <div class="brand-text">
           <h1>Truck Service Map</h1>
-          <p>Find nearby truck repair shops fast</p>
+          <p>Fast repair finder for truck drivers</p>
         </div>
-      </div>
-
-      <div class="topbar-actions">
-        <a href="#" class="auth-link">Log In</a>
-        <a href="#" class="auth-link auth-link-strong">Sign Up</a>
-        <button id="openAddServiceBtn" class="header-btn" type="button">
-          + Add Service
-        </button>
       </div>
     </div>
   </header>
 
   <main class="app-shell">
-    <aside class="left-panel">
-      <section class="search-panel">
-        <div class="panel-title-row">
-          <h2>Search</h2>
-          <div class="panel-mini-nav">
-            <span class="panel-mini-pill">Map Search</span>
-          </div>
-        </div>
+    <section class="search-panel search-bar-panel hero-panel">
+      <div class="hero-copy">
+        <h2>Find Truck Repair Near You in Seconds</h2>
+        <p class="hero-subtitle">Call | Navigate | Check-In before arrival</p>
+        <p class="hero-trust">Used by truck drivers who need fast answers on the road.</p>
+      </div>
 
+      <div class="search-toolbar">
         <div class="main-search-row">
           <input
             type="text"
@@ -53,98 +44,101 @@
           <button id="searchBtn" class="primary-search-btn" type="button">Search</button>
         </div>
 
-        <div class="map-actions">
-          <button id="useMyLocationBtn" class="secondary-btn" type="button">
+        <div class="search-toolbar-actions">
+          <button id="useMyLocationBtn" class="primary-location-btn" type="button">
             Use My Location
           </button>
-          <button id="searchAreaBtn" class="secondary-btn hidden" type="button">
-            Search This Area
-          </button>
-        </div>
-
-        <div id="searchStatus" class="search-status"></div>
-
-        <div class="secondary-actions">
           <button id="shopSearchClearBtn" class="secondary-btn" type="button">
             Clear Shop Search
           </button>
           <button id="clearFiltersBtn" class="secondary-btn" type="button">
-            Clear Filters
+            Reset
           </button>
         </div>
-      </section>
-
-      <section class="service-panel">
-        <div class="service-panel-header">
-          <h2>Selected service</h2>
-          <p>Click any marker on the map to see truck repair shop details.</p>
-        </div>
-
-        <div class="service-card" id="serviceCard">
-          <div class="service-name">No service selected</div>
-          <div class="verified-badge-placeholder">-</div>
-          <div class="service-row"><span>Address</span> -</div>
-          <div class="service-row"><span>Phone</span> -</div>
-          <div class="service-row"><span>Services</span> -</div>
-          <div class="service-row"><span>Service Types</span> -</div>
-          <div class="service-row"><span>Availability</span> -</div>
-          <div class="service-row"><span>Status</span> Hours unavailable</div>
-          <div class="service-row"><span>Distance</span> -</div>
-          <div class="service-row"><span>Hourly Rate</span> -</div>
-          <div class="service-row"><span>Diagnostic Price</span> -</div>
-          <div class="service-row"><span>Hours</span> -</div>
-
-          <div class="button-group">
-            <a class="action-btn disabled" href="#" id="callBtn">Call</a>
-            <a class="action-btn disabled" href="#" id="navigateBtn" target="_blank">Navigate</a>
-            <button class="action-btn disabled" id="checkInBtn" type="button">Check-In</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="nearest-panel">
-        <div class="panel-title-row">
-          <h2>Nearby Results</h2>
-          <button id="toggleNearestBtn" class="collapse-btn" type="button">Show</button>
-        </div>
-        <div id="nearestServicesContent" class="nearest-services-content hidden">
-          <p id="nearestServicesHint" class="nearest-hint">
-            Use your location to see the closest services.
-          </p>
-          <div id="nearestServicesList" class="nearest-services-list"></div>
-        </div>
-      </section>
-    </aside>
-
-    <section class="map-panel">
-      <section class="filters-panel map-filters-panel">
-        <div class="panel-title-row">
-          <h2>Filters</h2>
-          <button id="toggleFiltersBtn" class="collapse-btn hidden" type="button">Hide</button>
-        </div>
-
-        <div id="filtersContent" class="filters-content">
-          <div class="filters-list">
-            <button class="filter-chip" id="openNowFilterBtn" type="button">Open Now</button>
-            <button class="filter-chip" data-filter="engine_repair" type="button">Engine</button>
-            <button class="filter-chip" data-filter="transmission" type="button">Transmission</button>
-            <button class="filter-chip" data-filter="electrical" type="button">Electrical</button>
-            <button class="filter-chip" data-filter="brakes" type="button">Brakes</button>
-            <button class="filter-chip" data-filter="tires" type="button">Tires</button>
-            <button class="filter-chip" data-filter="trailer_repair" type="button">Trailer</button>
-            <button class="filter-chip" data-filter="diagnostics" type="button">Diagnostics</button>
-            <button class="filter-chip" data-filter="roadside_service" type="button">Roadside</button>
-            <button class="filter-chip" data-filter="mobile_mechanic" type="button">Mobile</button>
-            <button class="filter-chip" data-filter="towing_service" type="button">Towing</button>
-            <button class="filter-chip" data-filter="open_24_7" type="button">24/7</button>
-          </div>
-        </div>
-      </section>
-
-      <div class="map-card">
-        <div id="mapOverlayBadge" class="map-overlay-badge hidden"></div>
-        <div id="map"></div>
       </div>
+
+      <div id="searchStatus" class="search-status"></div>
+    </section>
+
+    <section class="workspace-layout">
+      <aside class="sidebar-shell">
+        <section id="resultsPanel" class="results-panel sidebar-card">
+          <div class="panel-title-row">
+            <div>
+              <h2>Nearby Results</h2>
+              <p id="resultsSummary" class="results-summary">Search or use your location to browse truck services.</p>
+            </div>
+            <button id="openAddServiceBtn" class="secondary-btn sidebar-action-btn" type="button">
+              + Add Service
+            </button>
+          </div>
+
+          <div id="nearestServicesContent" class="results-content">
+            <p id="nearestServicesHint" class="nearest-hint">
+              Search or use your location to browse truck services.
+            </p>
+            <div id="nearestServicesList" class="nearest-services-list"></div>
+          </div>
+        </section>
+
+        <section id="servicePanel" class="service-panel sidebar-card hidden">
+          <div class="service-panel-header">
+            <button id="closeServiceDetailsBtn" class="collapse-btn" type="button">Back to Results</button>
+            <h2>Selected service</h2>
+          </div>
+
+          <div class="service-card" id="serviceCard"></div>
+        </section>
+      </aside>
+
+      <section class="map-panel">
+        <section id="filtersSheet" class="filters-panel filters-toolbar">
+          <div id="filtersContent" class="filters-content">
+            <div class="filter-groups">
+              <div class="filter-group filter-group-availability">
+                <span class="filter-group-label">Availability</span>
+                <div class="filters-list">
+                  <button class="filter-chip" id="openNowFilterBtn" type="button">Open Now</button>
+                  <button class="filter-chip" data-filter="open_24_7" type="button">24/7</button>
+                </div>
+              </div>
+
+              <div class="filter-group">
+                <span class="filter-group-label">Service Type</span>
+                <div class="filters-list">
+                  <button class="filter-chip" data-filter="roadside_service" type="button">Roadside</button>
+                  <button class="filter-chip" data-filter="mobile_mechanic" type="button">Mobile</button>
+                  <button class="filter-chip" data-filter="towing_service" type="button">Towing</button>
+                </div>
+              </div>
+
+              <div class="filter-group">
+                <span class="filter-group-label">Repair</span>
+                <div class="filters-list">
+                  <button class="filter-chip" data-filter="engine_repair" type="button">Engine</button>
+                  <button class="filter-chip" data-filter="transmission" type="button">Transmission</button>
+                  <button class="filter-chip" data-filter="electrical" type="button">Electrical</button>
+                  <button class="filter-chip" data-filter="brakes" type="button">Brakes</button>
+                  <button class="filter-chip" data-filter="tires" type="button">Tires</button>
+                  <button class="filter-chip" data-filter="trailer_repair" type="button">Trailer</button>
+                  <button class="filter-chip" data-filter="diagnostics" type="button">Diagnostics</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="map-card">
+          <div id="mapSelectionHint" class="map-selection-hint">
+            Select a shop to see details
+          </div>
+          <button id="searchAreaBtn" class="search-area-btn hidden" type="button">
+            Search This Area
+          </button>
+          <div id="mapOverlayBadge" class="map-overlay-badge hidden"></div>
+          <div id="map"></div>
+        </div>
+      </section>
     </section>
   </main>
 
@@ -153,7 +147,7 @@
       <h2>Driver Check-In</h2>
 
       <div class="selected-service-box">
-        <strong>Service:</strong> <span id="selectedServiceName">No service selected</span>
+        <strong>Service:</strong> <span id="selectedServiceName">Select a service first</span>
       </div>
 
       <form id="checkinForm">
@@ -273,17 +267,9 @@
           <input id="shopHours" type="text" />
         </div>
 
-        <div class="two-col">
-          <div>
-            <label for="shopLat">Latitude</label>
-            <input id="shopLat" type="number" step="any" required />
-          </div>
-
-          <div>
-            <label for="shopLng">Longitude</label>
-            <input id="shopLng" type="number" step="any" required />
-          </div>
-        </div>
+        <input id="shopLat" type="hidden" required />
+        <input id="shopLng" type="hidden" required />
+        <p class="field-note">Coordinates will use the current map view automatically.</p>
 
         <div class="form-actions">
           <button class="form-btn primary" id="submitAddServiceBtn" type="submit">Save Service</button>

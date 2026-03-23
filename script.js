@@ -5,7 +5,7 @@ const SUPABASE_URL = "https://jpuyuvbqeuhkebqtjubj.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdXl1dmJxZXVoa2VicXRqdWJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMzM4MTcsImV4cCI6MjA4ODYwOTgxN30.fCf6ZJeOfEsiScA_p65G97yOfJdQrIixjzvp8G9KzP8";
 const EMPTY_VALUE = "-";
 const NEARBY_RADIUS_MILES = 100;
-const MAX_NEAREST_SERVICES = 5;
+const MAX_RESULTS_ITEMS = 24;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -18,8 +18,19 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 
 const markersLayer = L.layerGroup().addTo(map);
 
+function scheduleMapResize() {
+  window.requestAnimationFrame(() => {
+    map.invalidateSize();
+  });
+}
+
 const serviceCard = document.getElementById("serviceCard");
+const servicePanel = document.getElementById("servicePanel");
+const resultsPanel = document.getElementById("resultsPanel");
+const closeServiceDetailsBtn = document.getElementById("closeServiceDetailsBtn");
 const mapOverlayBadge = document.getElementById("mapOverlayBadge");
+const mapSelectionHint = document.getElementById("mapSelectionHint");
+const resultsSummary = document.getElementById("resultsSummary");
 
 const checkinModal = document.getElementById("checkinModal");
 const closeModal = document.getElementById("closeModal");
@@ -38,7 +49,7 @@ const submitAddServiceBtn = document.getElementById("submitAddServiceBtn");
 const filterChips = document.querySelectorAll(".filter-chip[data-filter]");
 const openNowFilterBtn = document.getElementById("openNowFilterBtn");
 const clearFiltersBtn = document.getElementById("clearFiltersBtn");
-const toggleFiltersBtn = document.getElementById("toggleFiltersBtn");
+const filtersSheet = document.getElementById("filtersSheet");
 const filtersContent = document.getElementById("filtersContent");
 const shopSearchInput = document.getElementById("shopSearch");
 const shopSearchClearBtn = document.getElementById("shopSearchClearBtn");
@@ -50,7 +61,6 @@ const searchAreaBtn = document.getElementById("searchAreaBtn");
 const nearestServicesContent = document.getElementById("nearestServicesContent");
 const nearestServicesHint = document.getElementById("nearestServicesHint");
 const nearestServicesList = document.getElementById("nearestServicesList");
-const toggleNearestBtn = document.getElementById("toggleNearestBtn");
 
 let selectedShop = null;
 let allServices = [];
@@ -60,13 +70,11 @@ let nearbyMode = false;
 let nearbyCenter = null;
 let userLocation = null;
 let openNowOnly = false;
-let nearestCollapsed = true;
 let visibleServices = [];
 let isProgrammaticMapMove = false;
 let mapAreaFilterBounds = null;
 let pendingFocusServiceId = null;
 let hasInitializedViewport = false;
-let filtersCollapsed = false;
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => {
@@ -321,12 +329,14 @@ function getMarkerVariant(shop) {
 
 function createMarkerIcon(shop) {
   const variant = getMarkerVariant(shop);
+  const openStatus = getServiceOpenStatus(shop);
 
   return L.icon({
     iconUrl: SERVICE_MARKER_ICONS[variant],
     iconSize: [32, 40],
     iconAnchor: [16, 40],
-    popupAnchor: [0, -34]
+    popupAnchor: [0, -34],
+    className: openStatus.isOpen ? "marker-open" : ""
   });
 }
 
@@ -339,6 +349,7 @@ function setProgrammaticMapView(callback) {
   callback();
   window.setTimeout(() => {
     isProgrammaticMapMove = false;
+    scheduleMapResize();
   }, 250);
 }
 
@@ -368,49 +379,89 @@ function getNearestBadges(shop) {
   return badges;
 }
 
+function getServiceHighlights(shop, limit = 3) {
+  const highlights = [];
+
+  if (shop.roadside_service) highlights.push("Roadside");
+  if (shop.mobile_mechanic) highlights.push("Mobile");
+  if (shop.towing_service) highlights.push("Towing");
+  if (shop.open_24_7) highlights.push("24/7");
+  if (shop.verified) highlights.push("Verified");
+
+  const repairHighlights = [
+    shop.engine_repair ? "Engine" : null,
+    shop.transmission ? "Transmission" : null,
+    shop.electrical ? "Electrical" : null,
+    shop.brakes ? "Brakes" : null,
+    shop.tires ? "Tires" : null,
+    shop.trailer_repair ? "Trailer" : null,
+    shop.diagnostics ? "Diagnostics" : null
+  ].filter(Boolean);
+
+  repairHighlights.forEach((item) => {
+    if (highlights.length < limit) highlights.push(item);
+  });
+
+  return [...new Set(highlights)].slice(0, limit);
+}
+
+function getNearestDistanceMiles(services) {
+  if (!userLocation || !services.length) return null;
+
+  const distances = services
+    .map((shop) => getServiceDistance(shop))
+    .filter((distance) => Number.isFinite(distance));
+
+  if (!distances.length) return null;
+  return Math.min(...distances);
+}
+
+function setSelectionHintVisible(isVisible) {
+  mapSelectionHint.classList.toggle("hidden", !isVisible);
+}
+
+function syncAddServiceCoordinatesWithMap() {
+  const center = map.getCenter();
+  document.getElementById("shopLat").value = center.lat.toFixed(6);
+  document.getElementById("shopLng").value = center.lng.toFixed(6);
+}
+
 function renderNearestServices(services) {
-  if (nearestCollapsed) {
-    nearestServicesContent.classList.add("hidden");
-    toggleNearestBtn.textContent = "Show";
-    return;
-  }
-
   nearestServicesContent.classList.remove("hidden");
-  toggleNearestBtn.textContent = "Hide";
 
-  if (!userLocation) {
-    nearestServicesHint.textContent = "Use your location to see the closest services.";
-    nearestServicesHint.classList.remove("hidden");
-    nearestServicesList.innerHTML = "";
-    return;
-  }
+  const rankedResults = userLocation
+    ? services
+        .map((shop) => ({ shop, distance: getServiceDistance(shop) }))
+        .sort((left, right) => {
+          const leftDistance = Number.isFinite(left.distance) ? left.distance : Number.POSITIVE_INFINITY;
+          const rightDistance = Number.isFinite(right.distance) ? right.distance : Number.POSITIVE_INFINITY;
+          return leftDistance - rightDistance;
+        })
+    : services.map((shop) => ({ shop, distance: null }));
 
-  const nearest = services
-    .map((shop) => ({ shop, distance: getServiceDistance(shop) }))
-    .filter((item) => Number.isFinite(item.distance))
-    .sort((left, right) => left.distance - right.distance)
-    .slice(0, MAX_NEAREST_SERVICES);
+  const visibleResults = rankedResults.slice(0, MAX_RESULTS_ITEMS);
 
-  if (!nearest.length) {
-    nearestServicesHint.textContent = "No nearby services match the current filters.";
+  if (!visibleResults.length) {
+    nearestServicesHint.textContent = "No services match the current search and filters.";
     nearestServicesHint.classList.remove("hidden");
     nearestServicesList.innerHTML = "";
     return;
   }
 
   nearestServicesHint.classList.add("hidden");
-  nearestServicesList.innerHTML = nearest
+  nearestServicesList.innerHTML = visibleResults
     .map(({ shop, distance }) => {
-      const badges = getNearestBadges(shop);
+      const badges = getServiceHighlights(shop, 3);
       const openStatus = getServiceOpenStatus(shop);
 
       return `
-        <button class="nearest-service-item" type="button" data-service-id="${shop.id}">
+        <button class="nearest-service-item ${openStatus.isOpen ? "is-open" : ""}" type="button" data-service-id="${shop.id}">
           <div class="nearest-service-top">
             <div class="nearest-service-name">${formatValue(shop.name)}</div>
-            <div class="nearest-service-distance">${formatDistanceMiles(distance)}</div>
+            <div class="nearest-service-distance">${distance === null ? "" : formatDistanceMiles(distance)}</div>
           </div>
-          <div class="nearest-service-meta">${escapeHtml(openStatus.label)} - ${formatValue(shop.address)}</div>
+          <div class="nearest-service-meta"><span class="${openStatus.className}">${escapeHtml(openStatus.label)}</span></div>
+          <div class="nearest-service-address">${formatValue(shop.address)}</div>
           <div class="nearest-badges">
             ${badges.map((badge) => `<span class="nearest-badge">${escapeHtml(badge)}</span>`).join("")}
           </div>
@@ -435,59 +486,61 @@ function renderNearestServices(services) {
 }
 
 function resetServiceCard() {
+  resultsPanel.classList.remove("hidden");
+  servicePanel.classList.add("hidden");
+  setSelectionHintVisible(true);
   serviceCard.innerHTML = `
-    <div class="service-name">No service selected</div>
-    <div class="verified-badge-placeholder">-</div>
-    <div class="service-row"><span>Address:</span> -</div>
-    <div class="service-row"><span>Phone:</span> -</div>
-    <div class="service-row"><span>Services:</span> -</div>
-    <div class="service-row"><span>Service Types:</span> -</div>
-    <div class="service-row"><span>Availability:</span> -</div>
-    <div class="service-row"><span>Status:</span> Hours unavailable</div>
-    <div class="service-row"><span>Distance:</span> -</div>
-    <div class="service-row"><span>Hourly Rate:</span> -</div>
-    <div class="service-row"><span>Diagnostic Price:</span> -</div>
-    <div class="service-row"><span>Hours:</span> -</div>
-
-    <div class="button-group">
-      <a class="action-btn disabled" href="#">Call</a>
-      <a class="action-btn disabled" href="#">Navigate</a>
-      <button class="action-btn disabled" type="button">Check-In</button>
+    <div class="service-placeholder">
+      Select a service from the map or results list to view details.
     </div>
   `;
 }
 
 function updateServiceCard(shop) {
   selectedShop = shop;
+  resultsPanel.classList.add("hidden");
+  servicePanel.classList.remove("hidden");
+  setSelectionHintVisible(false);
   selectedServiceName.textContent = shop.name;
 
-  const repairCategories = getRepairCategories(shop);
-  const serviceTypes = getServiceTypes(shop);
-  const availability = getAvailability(shop);
-  const verifiedBadge = shop.verified
-    ? `<div class="verified-badge">Verified Shop</div>`
-    : `<div class="verified-badge-placeholder">Standard listing</div>`;
+  const serviceHighlights = getServiceHighlights(shop, 5);
   const openStatus = getServiceOpenStatus(shop);
   const distance = getServiceDistance(shop);
+  const distanceLabel = distance === null ? "Distance unavailable" : formatDistanceMiles(distance);
+  const phoneLabel = shop.phone && String(shop.phone).trim() ? formatValue(shop.phone) : "Phone unavailable";
 
   serviceCard.innerHTML = `
-    <div class="service-name">${formatValue(shop.name)}</div>
-    ${verifiedBadge}
-    <div class="service-row"><span>Address:</span> ${formatValue(shop.address)}</div>
-    <div class="service-row"><span>Phone:</span> ${formatValue(shop.phone)}</div>
-    <div class="service-row"><span>Services:</span> ${renderTags(repairCategories)}</div>
-    <div class="service-row"><span>Service Types:</span> ${renderTags(serviceTypes)}</div>
-    <div class="service-row"><span>Availability:</span> ${renderTags(availability)}</div>
-    <div class="service-row"><span>Status:</span> <span class="${openStatus.className}">${escapeHtml(openStatus.label)}</span></div>
-    <div class="service-row"><span>Distance:</span> ${distance === null ? EMPTY_VALUE : formatDistanceMiles(distance)}</div>
-    <div class="service-row"><span>Hourly Rate:</span> ${formatValue(shop.hourly_rate)}</div>
-    <div class="service-row"><span>Diagnostic Price:</span> ${formatValue(shop.diagnostic_price)}</div>
-    <div class="service-row"><span>Hours:</span> ${formatValue(shop.hours)}</div>
+    <div class="service-hero">
+      <div class="service-name">${formatValue(shop.name)}</div>
+      <div class="service-meta-pills">
+        <span class="service-meta-pill">${escapeHtml(distanceLabel)}</span>
+        <span class="service-meta-pill ${openStatus.isOpen ? "service-meta-pill-open" : "service-meta-pill-neutral"}">${escapeHtml(openStatus.label)}</span>
+      </div>
+    </div>
 
-    <div class="button-group">
-      <a class="action-btn" href="tel:${cleanPhoneForTel(shop.phone || "")}">Call</a>
-      <a class="action-btn" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(shop.address || "")}" target="_blank">Navigate</a>
-      <button class="action-btn" id="checkInBtn" type="button">Check-In</button>
+    <div class="service-tags">
+      ${serviceHighlights.map((item) => `<span class="tag">${escapeHtml(item)}</span>`).join("")}
+    </div>
+
+    <div class="service-detail-block">
+      <span>Address</span>
+      <div>${formatValue(shop.address)}</div>
+    </div>
+
+    <div class="service-detail-block">
+      <span>Phone</span>
+      <div>${phoneLabel}</div>
+    </div>
+
+    <div class="button-group button-group-strong">
+      <a class="action-btn action-btn-call ${shop.phone ? "" : "disabled"}" href="tel:${cleanPhoneForTel(shop.phone || "")}">Call</a>
+      <a class="action-btn action-btn-nav" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(shop.address || "")}" target="_blank">Navigate</a>
+      <button class="action-btn action-btn-checkin" id="checkInBtn" type="button">Check-In</button>
+    </div>
+
+    <div class="service-support-row">
+      <div class="service-support-item"><span>Hours</span>${formatValue(shop.hours)}</div>
+      <div class="service-support-item"><span>Verified</span>${shop.verified ? "Yes" : "Standard listing"}</div>
     </div>
   `;
 
@@ -563,7 +616,7 @@ function renderMarkers(shops) {
   if (!shops.length) {
     if (!selectedShop || !visibleServices.some((item) => item.id === selectedShop.id)) {
       selectedShop = null;
-      selectedServiceName.textContent = "No service selected";
+      selectedServiceName.textContent = "Select a service first";
       resetServiceCard();
     }
     return;
@@ -636,29 +689,43 @@ function renderMarkers(shops) {
 }
 
 function updateSearchStatus(count) {
+  const nearestDistance = getNearestDistanceMiles(visibleServices);
+
   if (count === 0) {
     if (mapAreaFilterBounds) {
       searchStatus.textContent = "No services found in the current map area.";
+      resultsSummary.textContent = "No services found in this map area.";
       return;
     }
 
     if (nearbyMode && nearbyCenter) {
       searchStatus.textContent = `No services found within ${NEARBY_RADIUS_MILES} miles.`;
+      resultsSummary.textContent = "No nearby services found for the current search.";
       return;
     }
 
     searchStatus.textContent = "No services found.";
+    resultsSummary.textContent = "Try another search or use your current location.";
     return;
   }
 
-  const statusParts = [nearbyMode && nearbyCenter
-    ? `Showing ${count} services within ${NEARBY_RADIUS_MILES} miles`
-    : `Showing ${count} services`];
+  if (userLocation) {
+    searchStatus.textContent = `${count} services near you`;
+  } else if (nearbyMode && nearbyCenter) {
+    searchStatus.textContent = `${count} services near this location`;
+  } else if (mapAreaFilterBounds) {
+    searchStatus.textContent = `${count} services in this map area`;
+  } else {
+    searchStatus.textContent = `${count} services found`;
+  }
 
-  if (openNowOnly) statusParts.push("Open Now only");
-  if (mapAreaFilterBounds) statusParts.push("current map area");
-
-  searchStatus.textContent = statusParts.join(" - ");
+  if (nearestDistance !== null) {
+    resultsSummary.textContent = `Nearest: ${formatDistanceMiles(nearestDistance)}`;
+  } else if (nearbyMode && nearbyCenter) {
+    resultsSummary.textContent = `${count} services within ${NEARBY_RADIUS_MILES} miles`;
+  } else {
+    resultsSummary.textContent = `${count} services ready to explore`;
+  }
 }
 
 function applyAllFilters() {
@@ -751,8 +818,9 @@ function applyCurrentMapArea() {
 }
 
 function updateFiltersPanel() {
-  filtersContent.classList.toggle("hidden", filtersCollapsed);
-  toggleFiltersBtn.textContent = filtersCollapsed ? "Show" : "Hide";
+  filtersSheet.classList.remove("hidden");
+  filtersContent.classList.remove("hidden");
+  scheduleMapResize();
 }
 
 function resetFiltersAndArea() {
@@ -862,14 +930,10 @@ searchAreaBtn.addEventListener("click", () => {
   applyCurrentMapArea();
 });
 
-toggleFiltersBtn.addEventListener("click", () => {
-  filtersCollapsed = !filtersCollapsed;
-  updateFiltersPanel();
-});
-
-toggleNearestBtn.addEventListener("click", () => {
-  nearestCollapsed = !nearestCollapsed;
-  renderNearestServices(visibleServices);
+closeServiceDetailsBtn.addEventListener("click", () => {
+  selectedShop = null;
+  selectedServiceName.textContent = "Select a service first";
+  resetServiceCard();
 });
 
 closeModal.addEventListener("click", () => {
@@ -883,6 +947,7 @@ checkinModal.addEventListener("click", (event) => {
 });
 
 openAddServiceBtn.addEventListener("click", () => {
+  syncAddServiceCoordinatesWithMap();
   showAddServiceMessage("");
   openServiceModal();
 });
@@ -955,6 +1020,7 @@ checkinForm.addEventListener("submit", async (event) => {
 
 addServiceForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  syncAddServiceCoordinatesWithMap();
 
   const validationMessage = validateAddServiceForm();
   if (validationMessage) {
@@ -1023,6 +1089,14 @@ map.on("moveend", () => {
     mapOverlayBadge.textContent = "Map moved - press Search This Area";
     mapOverlayBadge.classList.remove("hidden");
   }
+});
+
+window.addEventListener("load", () => {
+  scheduleMapResize();
+});
+
+window.addEventListener("resize", () => {
+  scheduleMapResize();
 });
 
 resetServiceCard();
